@@ -1,0 +1,5 @@
+D:\Dropbox\progging\C#\RTMPLib\RTMPLib\obj\Debug\ResolveAssemblyReference.cache
+D:\Dropbox\progging\C#\RTMPLib\RTMPLib\bin\Debug\RTMPLib.dll
+D:\Dropbox\progging\C#\RTMPLib\RTMPLib\bin\Debug\RTMPLib.pdb
+D:\Dropbox\progging\C#\RTMPLib\RTMPLib\obj\Debug\RTMPLib.dll
+D:\Dropbox\progging\C#\RTMPLib\RTMPLib\obj\Debug\RTMPLib.pdb
