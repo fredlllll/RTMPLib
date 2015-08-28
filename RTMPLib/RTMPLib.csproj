@@ -55,8 +55,6 @@
     <Compile Include="RTMPConnection.cs" />
     <Compile Include="RTMPMessageInfo.cs" />
     <Compile Include="TcpClientWithTimeout.cs" />
-    <Compile Include="UNUSED\IReader.cs" />
-    <Compile Include="UNUSED\IWriter.cs" />
     <Compile Include="RTMPInterface.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RTMPMessage.cs" />

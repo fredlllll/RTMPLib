@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTMPLib", "RTMPLib\RTMPLib.csproj", "{63FE172E-DE39-4A2E-ABD0-03ABDB44A70F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTMPLibOLD", "RTMPLibOLD\RTMPLibOLD.csproj", "{14999833-0A3D-41A7-B083-26AFFA059905}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,10 +13,6 @@ Global
 		{63FE172E-DE39-4A2E-ABD0-03ABDB44A70F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63FE172E-DE39-4A2E-ABD0-03ABDB44A70F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63FE172E-DE39-4A2E-ABD0-03ABDB44A70F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{14999833-0A3D-41A7-B083-26AFFA059905}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{14999833-0A3D-41A7-B083-26AFFA059905}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{14999833-0A3D-41A7-B083-26AFFA059905}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{14999833-0A3D-41A7-B083-26AFFA059905}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
