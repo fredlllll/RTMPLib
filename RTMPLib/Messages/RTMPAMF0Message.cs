@@ -20,8 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RTMPLib.Internal;
 
-namespace RTMPLib
+namespace RTMPLib.Messages
 {
 	public class RTMPAMF0Message : RTMPMessage
 	{
@@ -96,8 +97,8 @@ namespace RTMPLib
 		/// <param name="val"></param>
 		public void Put(double val)
 		{
-			Body.BinaryWriter.Write((byte)AMF0Types.Number);
-			Body.BinaryWriter.Write(val);
+			Body.MemoryWriter.Write((byte)AMF0Types.Number);
+			Body.MemoryWriter.Write(val);
 		}
 
 		/// <summary>
@@ -106,14 +107,14 @@ namespace RTMPLib
 		/// <param name="val"></param>
 		public void Put(bool val)
 		{
-			Body.BinaryWriter.Write((byte)AMF0Types.Boolean);
+			Body.MemoryWriter.Write((byte)AMF0Types.Boolean);
 			if (val)
 			{
-				Body.BinaryWriter.Write((byte)1);
+				Body.MemoryWriter.Write((byte)1);
 			}
 			else
 			{
-				Body.BinaryWriter.Write((byte)0);
+				Body.MemoryWriter.Write((byte)0);
 			}
 		}
 
@@ -121,51 +122,51 @@ namespace RTMPLib
 		{
 			if (val.Length > ushort.MaxValue)
 			{
-				Body.BinaryWriter.Write((byte)AMF0Types.LongString);
-				Body.BinaryWriter.Write((uint)val.Length);
+				Body.MemoryWriter.Write((byte)AMF0Types.LongString);
+				Body.MemoryWriter.Write((uint)val.Length);
 				Body.Put(val);
 			}
 			else
 			{
-				Body.BinaryWriter.Write((byte)AMF0Types.String);
-				Body.BinaryWriter.Write((ushort)val.Length);
+				Body.MemoryWriter.Write((byte)AMF0Types.String);
+				Body.MemoryWriter.Write((ushort)val.Length);
 				Body.Put(val);
 			}
 		}
 
 		public void BeginObject()
 		{
-			Body.BinaryWriter.Write((byte)AMF0Types.ObjectBegin);
+			Body.MemoryWriter.Write((byte)AMF0Types.ObjectBegin);
 		}
 
 		public void EndObject()
 		{
-			Body.BinaryWriter.Write((ushort)0); // number, name strlen 0 and then a byte 9.... pretty risky stuff
-			Body.BinaryWriter.Write((byte)AMF0Types.ObjectEnd);
+			Body.MemoryWriter.Write((ushort)0); // number, name strlen 0 and then a byte 9.... pretty risky stuff
+			Body.MemoryWriter.Write((byte)AMF0Types.ObjectEnd);
 		}
 
 		public void PutNull()
 		{
-			Body.BinaryWriter.Write((byte)AMF0Types.Null);
+			Body.MemoryWriter.Write((byte)AMF0Types.Null);
 		}
 
 		public void PutName(String val)
 		{
-			Body.BinaryWriter.Write((ushort)val.Length);
+			Body.MemoryWriter.Write((ushort)val.Length);
 			Body.Put(val);
 		}
 
-		private static new Dictionary<string, Type> registered = new Dictionary<string, Type>();
+		private static Dictionary<string, Type> registered = new Dictionary<string, Type>();
 
-		private static RTMPAMF0Message(){
+		static RTMPAMF0Message(){
 			//TODO register subclasses
 		}
 
 		public static new RTMPAMF0Message Decode(RTMPMessage msg)
 		{
-			msg.Body.BinaryReader.BaseStream.Position = 0;
-			msg.Body.BinaryReader.ReadByte(); // 02;
-			short len = msg.Body.BinaryReader.ReadShort();//strlen
+			msg.Body.MemoryReader.BaseStream.Position = 0;
+			msg.Body.MemoryReader.ReadByte(); // should be 02;
+			short len = msg.Body.MemoryReader.ReadShort();//strlen
 			String command = msg.Body.ReadString(len);
 			Type tmp = registered[command];
 			return (RTMPAMF0Message)tmp.GetConstructor(new Type[] { typeof(RTMPMessage) }).Invoke(new object[] { msg });

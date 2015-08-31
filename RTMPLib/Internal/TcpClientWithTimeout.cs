@@ -24,7 +24,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Net;
 
-namespace RTMPLib
+namespace RTMPLib.Internal
 {
 	public class TcpClientWithTimeout
 	{
@@ -60,7 +60,7 @@ namespace RTMPLib
 			connectorThread.IsBackground = true; // So that a failed connection attempt wont prevent the process from terminating while it does a long timeout
 			connectorThread.Start();
 
-			// wait for either the thread to finish
+			// wait for the thread to finish
 			connectorThread.Join(timeoutMilliseconds);
 
 			if (Connected == true)

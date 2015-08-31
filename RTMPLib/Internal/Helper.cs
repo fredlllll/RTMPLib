@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RTMPLib
+namespace RTMPLib.Internal
 {
 	public enum Endianness
 	{
@@ -37,11 +37,11 @@ namespace RTMPLib
 				unsafe
 				{
 					short tmp = 1;
-					if (((byte*)&tmp)[0] == 0) // big endian
+					if (((byte*)&tmp)[0] == 0) // big endian cause most significant byte comes first
 					{
 						return Endianness.BigEndian;
 					}
-					else // little endian
+					else // little endian cause least significant byte comes first
 					{
 						return Endianness.LittleEndian;
 					}
@@ -49,7 +49,7 @@ namespace RTMPLib
 			}
 		}
 
-		public static Endianness NetworkEndianness
+		public static Endianness NetworkEndianness // just so noone forgets it
 		{
 			get { return Endianness.BigEndian; }
 		}

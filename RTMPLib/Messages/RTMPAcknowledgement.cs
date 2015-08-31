@@ -20,43 +20,29 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RTMPLib.Internal;
 
-namespace RTMPLib
+namespace RTMPLib.Messages
 {
-	public class RTMPAudioMessage : RTMPMessage
+	public class RTMPAcknowledgement : RTMPMessage
 	{
-
-		public byte Format
+		public uint BytesSoFar
 		{
 			get;
 			private set;
 		}
 
-		public byte[] Data
-		{
-			get;
-			private set;
-		}
-
-
-		public RTMPAudioMessage(RTMPConnection connection,int chunkStream, byte format, byte[] data)
-			: base(connection)
+		public RTMPAcknowledgement(RTMPConnection connection, uint bytesSoFar):base(connection)
 		{
 			Header.Format = RTMPMessageFormat.NoMessageId_8;
-			Header.MessageTypeID = RTMPMessageTypeID.AudioPacket;
-			Header.ChunkStreamID = (RTMPMessageChunkStreamID)chunkStream;
-
-			Format = format;
-			Data = data;
-			Body.BinaryWriter.Write(format);
-			Body.BinaryWriter.Write(data);
+			Header.MessageTypeID = RTMPMessageTypeID.Acknowledgement;
+			Header.ChunkStreamID = RTMPMessageChunkStreamID.LowLevelMessage;
+			Body.MemoryWriter.Write(bytesSoFar);
 		}
-		
 
-		public RTMPAudioMessage(RTMPMessage msg) : base(msg)
+		public RTMPAcknowledgement(RTMPMessage msg):base(msg)
 		{
-			Format = msg.Body.BinaryReader.ReadByte();
-			Data = msg.Body.BinaryReader.ReadBytes(msg.Header.MessageLengthFromHeader-1);
+			BytesSoFar = msg.Body.MemoryReader.ReadUInt();
 		}
 	}
 }

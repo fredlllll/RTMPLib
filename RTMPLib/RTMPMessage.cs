@@ -21,6 +21,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using RTMPLib.Internal;
+using RTMPLib.Messages;
 
 namespace RTMPLib
 {
@@ -56,14 +58,16 @@ namespace RTMPLib
 			Body.Send(bw);
 		}
 
-		public RTMPMessage(RTMPConnection connection,BinaryReader br)
+		public RTMPMessage(RTMPConnection connection, RTMPMessageHeader header, RTMPMessageBody body)
 		{
 			Connection = connection;
-			Header = new RTMPMessageHeader(this, br);
-			Body = new RTMPMessageBody(this, br);
+			Header = header;
+			header.ParentMessage = this;
+			Body = body;
+			body.ParentMessage = this;
 		}
 
-		public RTMPMessage(RTMPMessage msg)
+		protected RTMPMessage(RTMPMessage msg)
 		{
 			Connection = msg.Connection;
 			Header = msg.Header;
@@ -71,11 +75,26 @@ namespace RTMPLib
 		}
 
 		private static Dictionary<RTMPMessageTypeID, Type> registered = new Dictionary<RTMPMessageTypeID, Type>();
-		private RTMPMessage msg;
+		private static Dictionary<RTMPMessageTypeID, MethodInfo> registeredDecodeMethods = new Dictionary<RTMPMessageTypeID, MethodInfo>();
 
-		private static RTMPMessage()
+		private static Type[] constructorTypes = new Type[] { typeof(RTMPMessage) };
+
+		static RTMPMessage()
 		{
+			RegisterType(typeof(RTMPAcknowledgement), RTMPMessageTypeID.Acknowledgement);
+			RegisterType(typeof(RTMPAMF0Message), RTMPMessageTypeID.AMF0);
+			RegisterType(typeof(RTMPAudioMessage), RTMPMessageTypeID.AudioPacket);
+			RegisterType(typeof(RTMPSetChunkSize), RTMPMessageTypeID.SetChunkSize);
+			RegisterType(typeof(RTMPUserControlMessage), RTMPMessageTypeID.UserControlMessage);
 
+			//TODO: add more registered
+		}
+
+		private static void RegisterType(Type t, RTMPMessageTypeID typeID)
+		{
+			MethodInfo d = t.GetMethod("Decode", BindingFlags.Static | BindingFlags.Public);
+			registered[typeID] = t;
+			registeredDecodeMethods[typeID] = d;
 		}
 
 		/// <summary>
@@ -84,16 +103,15 @@ namespace RTMPLib
 		/// <returns></returns>
 		public static RTMPMessage Decode(RTMPMessage msg)
 		{
-			Type tmp = registered[msg.Header.MessageTypeID];
-			//MethodInfo[] all = tmp.GetMethods();
-			MethodInfo method = tmp.GetMethod("Decode");
+			Type type = registered[msg.Header.MessageTypeID];
+			MethodInfo method = registeredDecodeMethods[msg.Header.MessageTypeID];
 			if (method != null)
 			{
 				return (RTMPMessage)method.Invoke(null, new object[] { msg });
 			}
 			else
 			{
-				ConstructorInfo constructor = tmp.GetConstructor(new Type[] { typeof(RTMPMessage) });
+				ConstructorInfo constructor = type.GetConstructor(constructorTypes);
 				return (RTMPMessage)constructor.Invoke(new object[] { msg });
 			}
 		}

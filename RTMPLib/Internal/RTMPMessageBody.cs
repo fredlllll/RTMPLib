@@ -22,10 +22,16 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-namespace RTMPLib
+namespace RTMPLib.Internal
 {
 	public class RTMPMessageBody
 	{
+		public RTMPConnection Connection
+		{
+			get;
+			set;
+		}
+
 		public RTMPMessage ParentMessage
 		{
 			get;
@@ -42,40 +48,61 @@ namespace RTMPLib
 
 		private MemoryStream ms = new MemoryStream();
 
-		public RTMPLib.BinaryReader BinaryReader
+		public RTMPLib.Internal.BinaryReader MemoryReader
 		{
 			get;
 			private set;
 		}
 
-		public RTMPMessageBody(RTMPMessage rTMPMessage, RTMPLib.BinaryReader br)
+		public RTMPLib.Internal.BinaryWriter MemoryWriter
 		{
-			ParentMessage = rTMPMessage;
-			int remaining = ParentMessage.Header.MessageLengthFromHeader;
+			get;
+			private set;
+		}	
+
+		public RTMPMessageBody(RTMPMessage message)
+		{
+			ParentMessage = message;
+			MemoryWriter = new RTMPLib.Internal.BinaryWriter(ms);
+		}
+
+		public RTMPMessageBody(RTMPConnection connection, RTMPMessageHeader header, RTMPLib.Internal.BinaryReader br)
+		{
+			Connection = connection;
+			
+			byte[] buffer = null;
+			if (header.MessageLength < 0) //this is a follow up message
+			{
+				RTMPChunkStream csinfo = Connection.GetChunkStream((int)header.ChunkStreamID);
+				buffer = br.ReadBytes(Math.Min(csinfo.RemainingBytes, Connection.IncomingChunkSize));
+			}
+			else
+			{
+				buffer = br.ReadBytes(Math.Min(header.MessageLength, Connection.IncomingChunkSize));
+			}
+			ms.Write(buffer, 0, buffer.Length);
+			/*int remaining = connection.IncomingChunkSize;
+
 			while (remaining > 0)
 			{
-				byte[] buffer = br.ReadBytes(Math.Min(ParentMessage.Connection.ChunkSize,remaining));
+				byte[] buffer = br.ReadBytes(remaining);
+				ms.Write(buffer, 0, buffer.Length);
+				remaining -= ParentMessage.Connection.IncomingChunkSize;
+			}
+
+			int remaining = ParentMessage.Header.MessageLength;
+			while (remaining > 0)
+			{
+				byte[] buffer = br.ReadBytes(Math.Min(ParentMessage.Connection.IncomingChunkSize,remaining));
 				ms.Write(buffer,0,buffer.Length);
-				remaining -= ParentMessage.Connection.ChunkSize;
+				remaining -= ParentMessage.Connection.IncomingChunkSize;
 				if (remaining > 0)
 				{
 					new RTMPMessageHeader(ParentMessage, br); // read the header for the next message piece
 				}
-			}
+			}*/
 			ms.Position = 0;
-			BinaryReader = new BinaryReader(ms);
-		}
-
-		public RTMPLib.BinaryWriter BinaryWriter
-		{
-			get;
-			private set;
-		}
-
-		public RTMPMessageBody(RTMPMessage rTMPMessage)
-		{
-			ParentMessage = rTMPMessage;
-			BinaryWriter = new RTMPLib.BinaryWriter(ms);
+			MemoryReader = new RTMPLib.Internal.BinaryReader(ms);
 		}
 
 		public byte[] GetBytes()
@@ -83,21 +110,20 @@ namespace RTMPLib
 			return ms.ToArray();
 		}
 
-		public void Send(RTMPLib.BinaryWriter bw)
+		public void Send(RTMPLib.Internal.BinaryWriter bw)
 		{
 			bw.Write(GetBytes());
 		}
 
-
 		public void Put(String s)
 		{
 			byte[] tmp = Encoding.UTF8.GetBytes(s);
-			BinaryWriter.Write(tmp);
+			MemoryWriter.Write(tmp);
 		}
 
 		public String ReadString(int length)
 		{
-			return Encoding.UTF8.GetString(BinaryReader.ReadBytes(length));
+			return Encoding.UTF8.GetString(MemoryReader.ReadBytes(length));
 		}
 
 		public AMF0Object ReadAMF0Object()
@@ -106,7 +132,7 @@ namespace RTMPLib
 			{
 				return new AMF0Object(this);
 			}
-			catch
+			catch //yeah this is stupid. basically means this message has no amf0 object. as its binary data you cant really tell whats exactly going wrong
 			{
 				return null;
 			}

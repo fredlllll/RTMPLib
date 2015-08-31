@@ -21,31 +21,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RTMPLib
+namespace RTMPLib.Internal
 {
 	public class RTMPMessageHeader
 	{
+		public RTMPConnection Connection
+		{
+			get;
+			set;
+		}
+
 		public RTMPMessage ParentMessage
 		{
 			get;
 			set;
 		}
+
 		public RTMPMessageFormat Format // b11000000 2 bits
 		{
 			get;
 			set;
 		}
+
 		public RTMPMessageChunkStreamID ChunkStreamID
 		{// = 3; // b00111111 6 bits // 0 = extended with 1 byte, 1 = extended with 2 bytes to hold id, 2 = low level message, else 3 to 63 as ids
 			get;
 			set;
 		}
+
 		public uint Timestamp // 3 or 4 bytes
 		{
 			get;
 			set;
 		}
-		public int MessageLengthFromHeader
+
+		/*public int MessageLengthFromHeader
 		{
 			get;
 			private set;
@@ -57,19 +67,28 @@ namespace RTMPLib
 			{
 				if (MessageLengthFromHeader < 0)
 				{
-					return ParentMessage.Body.Size;
+					//return ParentMessage.Body.Size;
+					return -1; //this means this header has no information about it and it will be dependent on the previous messages
 				}
 				else
 				{
 					return MessageLengthFromHeader;
 				}
 			}
+		}*/
+
+		public int MessageLength
+		{
+			get;
+			private set;
 		}
+
 		public RTMPMessageTypeID MessageTypeID // 1 byte
 		{
 			get;
 			set;
 		}
+
 		public int MessageStreamID // 4 bytes, (little endian from spec, but value doesnt really matter as it seems?)
 		{
 			get;
@@ -79,13 +98,70 @@ namespace RTMPLib
 		public RTMPMessageHeader(RTMPMessage parentMessage)
 		{
 			ParentMessage = parentMessage;
+			Connection = parentMessage.Connection;
 
 			Format = RTMPMessageFormat.Undefined;
 			ChunkStreamID = RTMPMessageChunkStreamID.Undefined;
 			Timestamp = 0;
-			MessageLengthFromHeader = -1;
+			MessageLength = -1;
 			MessageTypeID = RTMPMessageTypeID.AMF0;
 			MessageStreamID = -1;
+		}
+
+		public RTMPMessageHeader(RTMPConnection connection, BinaryReader br)
+		{
+			Connection = connection;
+
+			//format
+			ReadFormatAndChunkStreamID(br);
+			RTMPChunkStream csinfo = Connection.GetChunkStream((int)ChunkStreamID);
+			//yay code repetition ftw!
+			switch (Format)
+			{
+				case RTMPMessageFormat.BasicHeader_1:
+					Timestamp = csinfo.Timestamp;
+					MessageLength = csinfo.MessageLength;
+					MessageTypeID = csinfo.MessageTypeID;
+					MessageStreamID = csinfo.MessageStreamID;
+					break;
+				case RTMPMessageFormat.BasicHeaderAndTime_4:
+					ReadTimestamp(br);
+					ReadExtendedTimestamp(br);
+
+					csinfo.Timestamp = Timestamp;
+					MessageLength = csinfo.MessageLength;
+					MessageTypeID = csinfo.MessageTypeID;
+					MessageStreamID = csinfo.MessageStreamID;
+					break;
+				case RTMPMessageFormat.NoMessageId_8:
+					ReadTimestamp(br);
+					ReadMessageLength(br);
+					ReadMessageTypeID(br);
+					ReadExtendedTimestamp(br);
+
+					csinfo.Timestamp = Timestamp;
+					csinfo.MessageLength = MessageLength;
+					csinfo.MessageTypeID = MessageTypeID;
+					MessageStreamID = csinfo.MessageStreamID;
+					break;
+				case RTMPMessageFormat.FullHeader_12:
+					ReadTimestamp(br);
+					ReadMessageLength(br);
+					ReadMessageTypeID(br);
+					ReadMessageStreamID(br);
+					ReadExtendedTimestamp(br);
+
+					csinfo.Timestamp = Timestamp;
+					csinfo.MessageLength = MessageLength;
+					csinfo.MessageTypeID = MessageTypeID;
+					csinfo.MessageStreamID = MessageStreamID;
+					break;
+			}
+
+			/*Timestamp = info.Timestamp;
+			MessageLengthFromHeader = info.MessageLength;
+			MessageTypeID = info.MessageTypeID;
+			MessageStreamID = info.MessageStreamID;*/
 		}
 
 		public void Send(BinaryWriter bw)
@@ -113,62 +189,6 @@ namespace RTMPLib
 					SendExtendedTimestamp(bw);
 					break;
 			}
-		}
-
-		public RTMPMessageHeader(RTMPMessage rTMPMessage, BinaryReader br)
-		{
-			ParentMessage = rTMPMessage;
-
-			//format
-			ReadFormatAndChunkStreamID(br);
-			RTMPMessageInfo info = ParentMessage.Connection.GetMessageInfo((int)ChunkStreamID);
-			//yay code repetition ftw!
-			switch (Format)
-			{
-				case RTMPMessageFormat.BasicHeader_1:
-					Timestamp = info.Timestamp;
-					MessageLengthFromHeader = info.MessageLength;
-					MessageTypeID = info.MessageTypeID;
-					MessageStreamID = info.MessageStreamID;
-					break;
-				case RTMPMessageFormat.BasicHeaderAndTime_4:
-					ReadTimestamp(br);
-					ReadExtendedTimestamp(br);
-
-					info.Timestamp = Timestamp;
-					MessageLengthFromHeader = info.MessageLength;
-					MessageTypeID = info.MessageTypeID;
-					MessageStreamID = info.MessageStreamID;
-					break;
-				case RTMPMessageFormat.NoMessageId_8:
-					ReadTimestamp(br);
-					ReadMessageLength(br);
-					ReadMessageTypeID(br);
-					ReadExtendedTimestamp(br);
-
-					info.Timestamp = Timestamp;
-					info.MessageLength = MessageLengthFromHeader;
-					info.MessageTypeID = MessageTypeID;
-					MessageStreamID = info.MessageStreamID;
-					break;
-				case RTMPMessageFormat.FullHeader_12:
-					ReadTimestamp(br);
-					ReadMessageLength(br);
-					ReadMessageTypeID(br);
-					ReadMessageStreamID(br);
-					ReadExtendedTimestamp(br);
-
-					info.Timestamp = Timestamp;
-					info.MessageLength = MessageLengthFromHeader;
-					info.MessageTypeID = MessageTypeID;
-					info.MessageStreamID = MessageStreamID;
-					break;
-			}
-
-			/*Timestamp = info.Timestamp;
-			MessageLengthFromHeader = info.MessageLength;
-			MessageTypeID = info.MessageTypeID;
-			MessageStreamID = info.MessageStreamID;*/
 		}
 
 		private void ReadFormatAndChunkStreamID(BinaryReader br)
@@ -294,10 +314,10 @@ namespace RTMPLib
 		private void ReadMessageLength(BinaryReader br)
 		{
 			byte[] bodysize = br.ReadBytes(3);
-			MessageLengthFromHeader = 0;
-			MessageLengthFromHeader |= bodysize[0] << 16;
-			MessageLengthFromHeader |= bodysize[1] << 8;
-			MessageLengthFromHeader |= bodysize[2];
+			MessageLength = 0;
+			MessageLength |= bodysize[0] << 16;
+			MessageLength |= bodysize[1] << 8;
+			MessageLength |= bodysize[2];
 		}
 
 		private void SendMessageLength(BinaryWriter bw)

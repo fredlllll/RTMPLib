@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RTMPLib.Internal;
 
 namespace RTMPLib
 {
@@ -29,7 +30,7 @@ namespace RTMPLib
 
 		public AMF0Object(RTMPMessageBody body)
 		{
-			byte first = body.BinaryReader.ReadByte();
+			byte first = body.MemoryReader.ReadByte();
 			if (first != 3)
 			{
 				throw new Exception("this is no AMF0Object");
@@ -43,7 +44,7 @@ namespace RTMPLib
 
 		private static AMF0ObjectProperty FromBody(RTMPMessageBody body)
 		{
-			BinaryReader br = body.BinaryReader;
+			BinaryReader br = body.MemoryReader;
 			ushort namelen = br.ReadUShort();
 			byte next = br.ReadByte();
 			if (namelen == 0 && next == 9)

@@ -20,48 +20,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RTMPLib.Internal;
 
-namespace RTMPLib
+namespace RTMPLib.Messages
 {
-	/// <summary>
-	/// Holds informations about the last received header values
-	/// </summary>
-	public class RTMPMessageInfo
+	public class RTMPSetChunkSize : RTMPMessage
 	{
-		/// <summary>
-		/// Last recorded Timestamp
-		/// </summary>
-		public uint Timestamp
+
+		public uint ChunkSize
 		{
 			get;
-			set;
+			private set;
 		}
 
-		/// <summary>
-		/// Last recorded MessageLength
-		/// </summary>
-		public int MessageLength
+		public RTMPSetChunkSize(RTMPConnection connection, uint chunkSize)
+			: base(connection)
 		{
-			get;
-			set;
+			Header.MessageTypeID = RTMPMessageTypeID.SetChunkSize;
+			ChunkSize = chunkSize;
+			Body.MemoryWriter.Write(chunkSize);
 		}
 
-		/// <summary>
-		/// Last recorded MessageTypeID
-		/// </summary>
-		public RTMPMessageTypeID MessageTypeID
+		public RTMPSetChunkSize(RTMPMessage msg)
+			: base(msg)
 		{
-			get;
-			set;
-		}
-
-		/// <summary>
-		/// Last recorded MessageStreamID
-		/// </summary>
-		public int MessageStreamID
-		{
-			get;
-			set;
+			ChunkSize = msg.Body.MemoryReader.ReadUInt();
 		}
 	}
 }

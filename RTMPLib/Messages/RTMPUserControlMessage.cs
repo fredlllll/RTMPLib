@@ -20,8 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RTMPLib.Internal;
 
-namespace RTMPLib
+namespace RTMPLib.Messages
 {
 	public class RTMPUserControlMessage : RTMPMessage
 	{
@@ -67,26 +68,26 @@ namespace RTMPLib
 		{
 			EventType = eventType;
 			Header.MessageTypeID = RTMPMessageTypeID.UserControlMessage;
-			Body.BinaryWriter.Write((ushort)eventType);
+			Body.MemoryWriter.Write((ushort)eventType);
 		}
 
 		public RTMPUserControlMessage(RTMPMessage msg)
 			: base(msg)
 		{
-			Body.BinaryReader.BaseStream.Position = 0;
-			EventType = (UserControlMessage_EventType)Body.BinaryReader.ReadUShort();
+			Body.MemoryReader.BaseStream.Position = 0;
+			EventType = (UserControlMessage_EventType)Body.MemoryReader.ReadUShort();
 		}
 
-		private static new Dictionary<UserControlMessage_EventType, Type> registered = new Dictionary<UserControlMessage_EventType, Type>();
-		private static RTMPUserControlMessage()
+		private static Dictionary<UserControlMessage_EventType, Type> registered = new Dictionary<UserControlMessage_EventType, Type>();
+		static RTMPUserControlMessage()
 		{
 			//TODO: register sub messages
 		}
 
 		public static new RTMPMessage Decode(RTMPMessage msg)
 		{
-			msg.Body.BinaryReader.BaseStream.Position = 0;
-			UserControlMessage_EventType eventType = (UserControlMessage_EventType)msg.Body.BinaryReader.ReadUShort();
+			msg.Body.MemoryReader.BaseStream.Position = 0;
+			UserControlMessage_EventType eventType = (UserControlMessage_EventType)msg.Body.MemoryReader.ReadUShort();
 			Type tmp = registered[eventType];
 			return (RTMPUserControlMessage)tmp.GetConstructor(new Type[] { typeof(RTMPMessage) }).Invoke(new object[] { msg });
 		}

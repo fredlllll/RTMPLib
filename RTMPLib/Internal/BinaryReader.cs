@@ -22,7 +22,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-namespace RTMPLib
+namespace RTMPLib.Internal
 {
 	public class BinaryReader
 	{
