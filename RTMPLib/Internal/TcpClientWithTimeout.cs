@@ -2,7 +2,7 @@
  * C# RTMPLib - Version 1.0.0
  * by Frederik Gelder <frederik.gelder@freenet.de>
  *
- * Copyright 2015 Frederik Gelder
+ * Copyright 2018 Frederik Gelder
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
  * limitations under the License.
  **********************************************************************************************/
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Net.Sockets;
 using System.Threading;
 using System.Net;
