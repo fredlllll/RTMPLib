@@ -57,14 +57,16 @@ namespace RTMPLib.Internal
         {
             Connected = false;
             exception = null;
-            Thread connectorThread = new Thread(TryConnect);
-            connectorThread.IsBackground = true; // So that a failed connection attempt wont prevent the process from terminating while it does a long timeout
+            Thread connectorThread = new Thread(TryConnect)
+            {
+                IsBackground = true // So that a failed connection attempt wont prevent the process from terminating while it does a long timeout
+            };
             connectorThread.Start();
 
             // wait for the thread to finish
             connectorThread.Join(timeoutMilliseconds);
 
-            if(Connected == true)
+            if(Connected)
             {
                 // it succeeded
                 return;
@@ -78,8 +80,7 @@ namespace RTMPLib.Internal
             {
                 // it timed out
                 connectorThread.Interrupt();
-                string message = string.Format("TcpClient connection to {0}:{1} timed out", EndPoint.Address, EndPoint.Port);
-                throw new TimeoutException(message);
+                throw new TimeoutException("TcpClient connection to " + EndPoint.Address + ":" + EndPoint.Port + " timed out");
             }
         }
 
@@ -87,10 +88,11 @@ namespace RTMPLib.Internal
         {
             try
             {
-                InternalClient = new TcpClient();
-                InternalClient.Connect(EndPoint);
-                // record that it succeeded, for the main thread to return to the caller
-                Connected = true;
+                var client = new TcpClient();
+                client = new TcpClient();
+                client.Connect(EndPoint);
+                InternalClient = client;
+                Connected = true;// record that it succeeded, for the main thread to return to the caller
             }
             catch(ThreadInterruptedException)
             {
