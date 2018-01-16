@@ -77,7 +77,7 @@ namespace RTMPLib.Internal
             else
             {
                 // it timed out
-                connectorThread.Abort();
+                connectorThread.Interrupt();
                 string message = string.Format("TcpClient connection to {0}:{1} timed out", EndPoint.Address, EndPoint.Port);
                 throw new TimeoutException(message);
             }
@@ -91,6 +91,10 @@ namespace RTMPLib.Internal
                 InternalClient.Connect(EndPoint);
                 // record that it succeeded, for the main thread to return to the caller
                 Connected = true;
+            }
+            catch(ThreadInterruptedException)
+            {
+                //just end
             }
             catch(Exception ex)
             {
